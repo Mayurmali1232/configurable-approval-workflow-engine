@@ -1,8 +1,5 @@
 package com.workflow.engine.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 
 
 public class AuthResponse {
