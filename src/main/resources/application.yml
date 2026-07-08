@@ -1,6 +1,6 @@
 
 server:
-  port: ${PORT:8080} # Uses Render's dynamic port, defaults to 8080 locally
+  port: ${PORT:8080}
 
 spring:
   application:
