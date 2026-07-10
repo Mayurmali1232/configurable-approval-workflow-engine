@@ -200,21 +200,28 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found with ID: " + id));
         User caller = getCurrentUserEntity();
 
-        
+        // 1. Validation: Only ADMIN can override
         if (caller.getRole() != Role.ADMIN) {
             throw new UnauthorizedActionException("Admin role required to perform an override.");
         }
         
-        
+        // 2. Validation: Request must be PENDING
         if (request.getStatus() != RequestStatus.PENDING) {
             throw new InvalidTransitionException("Cannot override a completed request.");
         }
 
-       
+        // 3. Get total steps configured for this type to push the currentStep to the final boundary
+        List<ApprovalStep> totalSteps = approvalStepRepository.findByRequestTypeOrderByStepOrderAsc(request.getType());
+        
+        // 4. Forcefully set status to APPROVED and move current step to maximum count
         request.setStatus(RequestStatus.APPROVED);
+        if (!totalSteps.isEmpty()) {
+            request.setCurrentStep(totalSteps.size()); // It will directly jump to Step 3 (or the max step)
+        }
+        
         Request updatedRequest = requestRepository.save(request);
 
-        
+        // 5. Save History with [Admin Override] tag
         ApprovalHistory history = new ApprovalHistory();
         history.setRequest(updatedRequest);
         history.setAction(WorkflowAction.OVERRIDDEN);
