@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 
 public class ActionRequestDto {
-    @NotBlank(message = "Action justification feedback details required")
+    @NotBlank(message = "Action feedback details required")
     private String remarks;
     
     public ActionRequestDto()
@@ -12,9 +12,9 @@ public class ActionRequestDto {
     	
 	}
 
-	public ActionRequestDto(@NotBlank(message = "Action justification feedback details required") String remarks) 
+	public ActionRequestDto(@NotBlank(message = "Action feedback details required") String remarks) 
 	{
-		super();
+		
 		this.remarks = remarks;
 	}
 

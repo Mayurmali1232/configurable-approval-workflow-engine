@@ -200,7 +200,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found with ID: " + id));
         User caller = getCurrentUserEntity();
 
-        // 1. Validation: Only ADMIN can override
+        // 1. Validation: Only ADMIN can perform an override
         if (caller.getRole() != Role.ADMIN) {
             throw new UnauthorizedActionException("Admin role required to perform an override.");
         }
@@ -210,28 +210,35 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new InvalidTransitionException("Cannot override a completed request.");
         }
 
-        // 3. Get total steps configured for this type to push the currentStep to the final boundary
+        // 3. Get total steps configured to push the currentStep to the final boundary
         List<ApprovalStep> totalSteps = approvalStepRepository.findByRequestTypeOrderByStepOrderAsc(request.getType());
-        
-        // 4. Forcefully set status to APPROVED and move current step to maximum count
-        request.setStatus(RequestStatus.APPROVED);
         if (!totalSteps.isEmpty()) {
-            request.setCurrentStep(totalSteps.size()); // It will directly jump to Step 3 (or the max step)
+            request.setCurrentStep(totalSteps.size()); // Directly push to the maximum step count
+        }
+
+        // 4. Dynamic Decision: Check if admin wants to force-approve or force-reject
+        boolean isRejection = dto.getRemarks() != null && dto.getRemarks().toUpperCase().contains("REJECT");
+        
+        if (isRejection) {
+            request.setStatus(RequestStatus.REJECTED);
+        } else {
+            request.setStatus(RequestStatus.APPROVED);
         }
         
         Request updatedRequest = requestRepository.save(request);
 
-        // 5. Save History with [Admin Override] tag
+        // 5. Save History with accurate action tags
         ApprovalHistory history = new ApprovalHistory();
         history.setRequest(updatedRequest);
-        history.setAction(WorkflowAction.OVERRIDDEN);
+        // If rejected, save as REJECTED action, else OVERRIDDEN
+        history.setAction(isRejection ? WorkflowAction.REJECTED : WorkflowAction.OVERRIDDEN);
         history.setActionBy(caller.getUsername());
         history.setActionAt(LocalDateTime.now());
         history.setRemarks("[Admin Override] " + dto.getRemarks());
         
         historyRepository.save(history);
 
-        log.info("Request ID {} forcefully OVERRIDDEN by Admin {}", id, caller.getUsername());
+        log.info("Request ID {} forcefully OVERRIDDEN to {} by Admin {}", id, request.getStatus(), caller.getUsername());
         return WorkflowMapper.toResponseDto(updatedRequest);
     }
 

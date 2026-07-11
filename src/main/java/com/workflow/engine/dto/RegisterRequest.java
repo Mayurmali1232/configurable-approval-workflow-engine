@@ -21,7 +21,7 @@ public class RegisterRequest {
 	public RegisterRequest(@NotBlank(message = "Username cannot be empty") String username,
 			@NotBlank(message = "Password cannot be empty") String password,
 			@NotBlank(message = "Role mapping specification required") String role) {
-		super();
+		
 		this.username = username;
 		this.password = password;
 		this.role = role;

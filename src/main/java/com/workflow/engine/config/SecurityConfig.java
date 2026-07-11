@@ -34,21 +34,25 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-
+//It is used to verity the user credentials. It is responsible to authenticating users
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/h2-console/**").permitAll()
-                        .requestMatchers("/api/v1/requests/*/override").hasRole("ADMIN")
-                        .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+        http.csrf(csrf -> csrf.disable());
+
+        http.headers(headers ->
+                headers.frameOptions(frame -> frame.disable()));
+
+        http.sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/auth/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/v1/requests/*/override").hasRole("ADMIN")
+                .anyRequest().authenticated());
+
+        http.addFilterBefore(jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
